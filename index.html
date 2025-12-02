@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR 보물찾기 By 은배쌤</title>
+    <title>QR 보물찾기 (V7)</title>
     <style>
         body {
             font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -20,7 +20,7 @@
             margin-bottom: 20px;
         }
         
-        /* 설명 및 시작 버튼 박스 */
+        /* 설명 박스 */
         #instructions {
             background-color: #fff;
             padding: 20px;
@@ -32,10 +32,9 @@
             line-height: 1.6;
             color: #555;
             text-align: left;
-            position: relative;
         }
 
-        /* 게임 시작 버튼 스타일 */
+        /* 게임 시작 버튼 */
         #start-btn {
             display: block;
             width: 100%;
@@ -48,7 +47,7 @@
             font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 0 #388E3C; /* 입체감 */
+            box-shadow: 0 4px 0 #388E3C;
             transition: all 0.1s;
         }
         #start-btn:active {
@@ -56,14 +55,14 @@
             box-shadow: 0 0 0 #388E3C;
         }
 
-        /* 게임 보드판 (처음에는 숨김) */
+        /* 게임 보드판 (처음엔 숨김) */
         #game-board {
-            display: none; /* [핵심] 처음엔 안 보임 */
+            display: none;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             max-width: 400px;
             margin: 0 auto;
-            animation: fadeIn 0.8s ease-out; /* 나타날 때 효과 */
+            animation: fadeIn 0.8s ease-out;
         }
 
         /* 아이템 칸 스타일 */
@@ -133,7 +132,7 @@
             border-radius: 8px; 
         }
 
-        /* 관리자 버튼 영역 (처음엔 숨김) */
+        /* 관리자 버튼 영역 */
         #admin-controls {
             display: none;
             margin-top: 50px;
@@ -163,7 +162,6 @@
             font-weight: bold;
         }
 
-        /* 애니메이션 */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-20px);} 60% {transform: translateY(-10px);} }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -171,14 +169,14 @@
 </head>
 <body>
 
-    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 처음부터 다시하기</button>
+    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 전체 데이터 초기화 ⚠️</button>
 
-    <h1>🏫 숨겨진 동물 QR을 찾아보자</h1>
+    <h1>🏫 우리 반 동물농장 보물찾기</h1>
 
     <div id="instructions">
         <strong>[참여 방법]</strong><br>
         1. <strong>[▶ 게임 시작]</strong> 버튼을 누르세요.<br>
-        2. 곳곳에 숨겨진 <strong>동물 QR 코드</strong>를 찾아 카메라로 바추어보세요.<br>
+        2. 곳곳에 숨겨진 <strong>동물 QR 코드</strong>를 찾아 카메라로 비추어보세요.<br>
         3. 모든 동물 QR코드를 찾으면 보물상자가 열립니다!
         
         <button id="start-btn" onclick="startGame()">▶ 게임 시작 (소리 켜기)</button>
@@ -214,75 +212,49 @@
         const MASTER_PASSWORD = "1234"; 
         const items = ['cat', 'dog', 'rabbit', 'bear', 'turtle', 'fish', 'bird', 'butterfly'];
         let isAdminMode = false;
-
-        // 오디오 컨텍스트 (전역 변수)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        function playTone(type) {
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            if (type === 'found') {
-                // 띠링~
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); 
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.5);
-            } else if (type === 'win') {
-                // 빠밤!
-                playNote(523.25, 0, 0.2); 
-                playNote(659.25, 0.2, 0.4); 
-                playNote(783.99, 0.4, 1.0); 
-            } else if (type === 'start') {
-                // 시작 소리 (뿅!)
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            }
-        }
-
-        function playNote(freq, startTime, duration) {
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            osc.frequency.value = freq;
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime + startTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
-            osc.start(audioCtx.currentTime + startTime);
-            osc.stop(audioCtx.currentTime + startTime + duration);
-        }
-
-        // --- [핵심 변경 로직] ---
-
-        // 1. 페이지 로드 시에는 아무것도 안 함 (화면 가려짐)
-        
-        // 2. [게임 시작] 버튼 클릭 시 실행되는 함수
-        function startGame() {
-            // (1) 소리 권한 획득 (Resume)
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            playTone('start'); // 뿅! 소리 재생
-
-            // (2) 화면 보여주기
-            document.getElementById('game-board').style.display = 'grid'; // 그리드 보이기
-            document.getElementById('admin-controls').style.display = 'block'; // 관리자 버튼 보이기
-            document.getElementById('start-btn').style.display = 'none'; // 시작 버튼 숨기기
+        // 1. 페이지 로드 시 실행 (자동 시작 확인)
+        document.addEventListener('DOMContentLoaded', () => {
+            // "게임 시작" 버튼을 이미 눌렀는지 확인
+            const isStarted = localStorage.getItem('gameStarted');
             
-            // (3) 이제 QR 코드 확인 시작!
-            checkQRCode();
+            if (isStarted === 'true') {
+                // 이미 시작했다면 바로 화면 보여주기
+                showGameScreen();
+                checkQRCode(); // QR 코드 확인
+                updateBoard(); // 보드판 그리기
+            } else {
+                // 시작 안 했으면 QR 확인 안 함 (시작 버튼 대기)
+            }
+
+            // 터치 시 오디오 권한 확보 (모바일 필수)
+            document.body.addEventListener('click', () => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }, {once:true});
+        });
+
+        // 2. 게임 시작 버튼 클릭
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playTone('start');
+            
+            // "게임 시작됨" 상태 저장 [핵심 수정 사항]
+            localStorage.setItem('gameStarted', 'true');
+
+            showGameScreen();
+            checkQRCode(); // 혹시 QR로 바로 접속하고 버튼 눌렀을 경우를 위해
             updateBoard();
         }
 
-        // QR 코드 확인 (이제 startGame 이후에 실행됨)
+        // 화면 전환 함수 (중복 제거)
+        function showGameScreen() {
+            document.getElementById('game-board').style.display = 'grid';
+            document.getElementById('admin-controls').style.display = 'block';
+            document.getElementById('start-btn').style.display = 'none';
+        }
+
+        // QR 코드 확인
         function checkQRCode() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
@@ -294,7 +266,7 @@
                     foundList.push(code);
                     localStorage.setItem('myAnimals', JSON.stringify(foundList));
                     
-                    // 시작 버튼 누른 직후라 소리 재생 100% 보장
+                    // 소리 재생 (자동 시작 시 브라우저 정책으로 소리가 안 날 수 있음 -> 터치 유도)
                     setTimeout(() => { playTone('found'); }, 300); 
                     alert('야호! ' + getEmoji(code) + '를 찾았습니다!');
                 }
@@ -328,7 +300,46 @@
             }
         }
 
-        // --- [관리자 기능] ---
+        function playTone(type) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'found') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); 
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'win') {
+                playNote(523.25, 0, 0.2); 
+                playNote(659.25, 0.2, 0.4); 
+                playNote(783.99, 0.4, 1.0); 
+            } else if (type === 'start') {
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        function playNote(freq, startTime, duration) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime + startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+            osc.start(audioCtx.currentTime + startTime);
+            osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+
+        // --- 관리자 기능 ---
         function toggleAdminMode() {
             const input = prompt("관리자 비밀번호를 입력하세요:");
             if (input === MASTER_PASSWORD) {
@@ -348,6 +359,7 @@
         function resetAllData() {
             if (confirm("정말로 모든 데이터를 지우고 처음부터 시작하시겠습니까?")) {
                 localStorage.removeItem('myAnimals');
+                localStorage.removeItem('gameStarted'); // 시작 기록도 함께 삭제
                 location.reload();
             }
         }
