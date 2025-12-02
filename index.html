@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR 보물찾기 (V5)</title>
+    <title>QR 보물찾기 (V6)</title>
     <style>
         body {
             font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -11,34 +11,59 @@
             background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
-            touch-action: manipulation; /* 더블탭 확대 방지 */
-            user-select: none; /* 텍스트 선택 방지 */
+            touch-action: manipulation;
+            user-select: none;
         }
         h1 {
             font-size: 1.5rem;
             color: #333;
             margin-bottom: 20px;
         }
+        
+        /* 설명 및 시작 버튼 박스 */
         #instructions {
             background-color: #fff;
-            padding: 15px;
+            padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin: 0 auto 30px;
             max-width: 500px;
-            font-size: 0.95rem;
+            font-size: 1rem;
             line-height: 1.6;
             color: #555;
             text-align: left;
+            position: relative;
         }
 
-        /* 게임 보드판 (3x3) */
+        /* 게임 시작 버튼 스타일 */
+        #start-btn {
+            display: block;
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #388E3C; /* 입체감 */
+            transition: all 0.1s;
+        }
+        #start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #388E3C;
+        }
+
+        /* 게임 보드판 (처음에는 숨김) */
         #game-board {
-            display: grid;
+            display: none; /* [핵심] 처음엔 안 보임 */
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             max-width: 400px;
             margin: 0 auto;
+            animation: fadeIn 0.8s ease-out; /* 나타날 때 효과 */
         }
 
         /* 아이템 칸 스타일 */
@@ -54,12 +79,9 @@
             transition: transform 0.2s;
             cursor: pointer;
             position: relative;
-            
-            /* 찾지 못한 상태: 흑백 + 흐리게 */
             filter: grayscale(100%) opacity(0.3);
         }
 
-        /* 중앙 보물상자 칸 */
         #chest-slot {
             font-size: 3.5rem;
             filter: none;
@@ -67,7 +89,6 @@
             cursor: default;
         }
 
-        /* 찾은 상태 */
         .item-slot.found {
             filter: grayscale(0%) opacity(1);
             background-color: #e3f2fd;
@@ -75,7 +96,7 @@
             animation: bounce 0.6s;
         }
 
-        /* 관리자 모드에서 삭제 가능 표시 */
+        /* 관리자 모드 삭제 표시 */
         body.admin-mode .item-slot.found::after {
             content: "❌";
             position: absolute;
@@ -93,7 +114,6 @@
             animation: spin 0.6s;
         }
 
-        /* 승리 메시지 */
         #win-message {
             display: none;
             margin-top: 30px;
@@ -113,8 +133,9 @@
             border-radius: 8px; 
         }
 
-        /* 관리자 버튼 영역 */
+        /* 관리자 버튼 영역 (처음엔 숨김) */
         #admin-controls {
+            display: none;
             margin-top: 50px;
             border-top: 1px solid #ddd;
             padding-top: 20px;
@@ -128,12 +149,9 @@
             font-size: 0.8rem;
             cursor: pointer;
         }
-        /* 관리자 모드 활성화 시 스타일 */
-        body.admin-mode {
-            border: 4px solid #f44336; /* 화면 테두리 빨간색 */
-        }
+        body.admin-mode { border: 4px solid #f44336; }
         #reset-all-btn {
-            display: none; /* 평소엔 숨김 */
+            display: none;
             background-color: #f44336;
             color: white;
             border: none;
@@ -145,21 +163,25 @@
             font-weight: bold;
         }
 
+        /* 애니메이션 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-20px);} 60% {transform: translateY(-10px);} }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 전체 데이터 초기화 (처음부터 다시) ⚠️</button>
+    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 전체 데이터 초기화 ⚠️</button>
 
     <h1>🏫 우리 반 동물농장 보물찾기</h1>
 
     <div id="instructions">
         <strong>[참여 방법]</strong><br>
         1. 교실에 숨겨진 <strong>QR 코드 8개</strong>를 찾으세요.<br>
-        2. QR을 찍으면 동물들이 하나씩 깨어납니다.<br>
-        3. 8마리 동물을 모두 깨우면 <strong>보물상자</strong>가 열립니다!
+        2. QR을 찍은 뒤, 아래 <strong>[게임 시작]</strong> 버튼을 누르세요.<br>
+        3. 8마리 동물을 모두 찾으면 보물상자가 열립니다!
+        
+        <button id="start-btn" onclick="startGame()">▶ 게임 시작 (소리 켜기)</button>
     </div>
 
     <div id="game-board">
@@ -189,44 +211,40 @@
     </div>
 
     <script>
-        // --- [설정] ---
-        const MASTER_PASSWORD = "1234"; // 관리자 비밀번호 (원하는 숫자로 변경하세요)
+        const MASTER_PASSWORD = "1234"; 
         const items = ['cat', 'dog', 'rabbit', 'bear', 'turtle', 'fish', 'bird', 'butterfly'];
-        let isAdminMode = false; // 관리자 모드 상태
+        let isAdminMode = false;
 
-        // --- [효과음 데이터 (Base64)] ---
-        // 딩동 (찾았을 때)
-        const soundFound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGl2ZXJ5IEZlYXR1cmVz//6UAAAAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-        // 팡파레 (성공했을 때)
-        const soundWin = new Audio("data:audio/mp3;base64,//6UAAAAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//6UAAxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-        
-        // (용량 문제로 아주 짧은 비프음으로 대체했습니다. 실제 작동 시 '띡' 소리가 납니다. 
-        // 더 좋은 소리를 원하시면 mp3 파일 URL을 사용해야 합니다.)
-
-        // 실제로는 더 나은 UX를 위해 오실레이터(Web Audio API)로 '띠링' 소리를 즉석에서 만듭니다.
+        // 오디오 컨텍스트 (전역 변수)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         function playTone(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             osc.connect(gainNode);
             gainNode.connect(audioCtx.destination);
 
             if (type === 'found') {
-                // 띠링~ (높은 도 -> 미)
+                // 띠링~
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); 
                 gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.5);
             } else if (type === 'win') {
-                // 빠밤! (화음)
-                playNote(523.25, 0, 0.2); // Do
-                playNote(659.25, 0.2, 0.4); // Mi
-                playNote(783.99, 0.4, 1.0); // Sol
+                // 빠밤!
+                playNote(523.25, 0, 0.2); 
+                playNote(659.25, 0.2, 0.4); 
+                playNote(783.99, 0.4, 1.0); 
+            } else if (type === 'start') {
+                // 시작 소리 (뿅!)
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
             }
         }
 
@@ -242,18 +260,29 @@
             osc.stop(audioCtx.currentTime + startTime + duration);
         }
 
-        // --- [핵심 로직] ---
+        // --- [핵심 변경 로직] ---
 
-        document.addEventListener('DOMContentLoaded', () => {
+        // 1. 페이지 로드 시에는 아무것도 안 함 (화면 가려짐)
+        
+        // 2. [게임 시작] 버튼 클릭 시 실행되는 함수
+        function startGame() {
+            // (1) 소리 권한 획득 (Resume)
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            playTone('start'); // 뿅! 소리 재생
+
+            // (2) 화면 보여주기
+            document.getElementById('game-board').style.display = 'grid'; // 그리드 보이기
+            document.getElementById('admin-controls').style.display = 'block'; // 관리자 버튼 보이기
+            document.getElementById('start-btn').style.display = 'none'; // 시작 버튼 숨기기
+            
+            // (3) 이제 QR 코드 확인 시작!
             checkQRCode();
             updateBoard();
-            
-            // 사용자가 화면을 터치하면 오디오 컨텍스트 활성화 (모바일 정책 대응)
-            document.body.addEventListener('click', () => {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-            }, {once:true});
-        });
+        }
 
+        // QR 코드 확인 (이제 startGame 이후에 실행됨)
         function checkQRCode() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
@@ -265,12 +294,11 @@
                     foundList.push(code);
                     localStorage.setItem('myAnimals', JSON.stringify(foundList));
                     
-                    // 효과음 재생
-                    playTone('found');
+                    // 시작 버튼 누른 직후라 소리 재생 100% 보장
+                    setTimeout(() => { playTone('found'); }, 300); 
                     alert('야호! ' + getEmoji(code) + '를 찾았습니다!');
                 }
                 
-                // 주소창 정리
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
@@ -278,28 +306,21 @@
         function updateBoard() {
             const foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
             
-            // 모든 슬롯 초기화
-            items.forEach(id => {
-                document.getElementById(id).classList.remove('found');
-            });
-
-            // 찾은 것만 활성화
+            items.forEach(id => { document.getElementById(id).classList.remove('found'); });
             foundList.forEach(id => {
                 const element = document.getElementById(id);
                 if(element) element.classList.add('found');
             });
 
-            // 승리 조건
             if (foundList.length === items.length) {
                 const chest = document.getElementById('chest-slot');
                 if (!chest.classList.contains('open')) {
-                    playTone('win'); // 승리 소리
+                    setTimeout(() => { playTone('win'); }, 500);
                 }
                 chest.innerHTML = '💎';
                 chest.classList.add('open');
                 document.getElementById('win-message').style.display = 'block';
             } else {
-                // 승리 취소 시 (관리자 삭제 등으로) 다시 닫음
                 const chest = document.getElementById('chest-slot');
                 chest.innerHTML = '🎁';
                 chest.classList.remove('open');
@@ -308,7 +329,6 @@
         }
 
         // --- [관리자 기능] ---
-
         function toggleAdminMode() {
             const input = prompt("관리자 비밀번호를 입력하세요:");
             if (input === MASTER_PASSWORD) {
@@ -316,15 +336,13 @@
                 if (isAdminMode) {
                     document.body.classList.add('admin-mode');
                     document.getElementById('reset-all-btn').style.display = 'inline-block';
-                    alert("🔧 관리자 모드 ON\n\n1. 상단의 빨간 버튼을 누르면 [전체 초기화] 됩니다.\n2. 이미 찾은 동물을 터치하면 [취소] 됩니다.");
+                    alert("🔧 관리자 모드 ON");
                 } else {
                     document.body.classList.remove('admin-mode');
                     document.getElementById('reset-all-btn').style.display = 'none';
                     alert("관리자 모드가 종료되었습니다.");
                 }
-            } else {
-                if(input !== null) alert("비밀번호가 틀렸습니다.");
-            }
+            } else if(input !== null) alert("비밀번호가 틀렸습니다.");
         }
 
         function resetAllData() {
@@ -334,18 +352,14 @@
             }
         }
 
-        // 아이템 클릭 핸들러 (관리자 모드일 때만 작동)
         function handleItemClick(id) {
-            if (!isAdminMode) return; // 관리자가 아니면 반응 없음
-
+            if (!isAdminMode) return;
             let foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
-            
-            // 이미 찾은 동물이라면 목록에서 제거
             if (foundList.includes(id)) {
                 if (confirm(getEmoji(id) + " 획득을 취소하시겠습니까?")) {
                     foundList = foundList.filter(item => item !== id);
                     localStorage.setItem('myAnimals', JSON.stringify(foundList));
-                    updateBoard(); // 화면 갱신
+                    updateBoard();
                 }
             }
         }
