@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR 보물찾기 (V4)</title>
+    <style>
+        body {
+            font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            text-align: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            /* 스마트폰 터치 시 확대 방지 */
+            touch-action: manipulation;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #instructions {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 0 auto 30px;
+            max-width: 500px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #555;
+            text-align: left;
+        }
+
+        /* 게임 보드판 (3x3) */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* 아이템 칸 스타일 */
+        .item-slot {
+            aspect-ratio: 1 / 1; /* 정사각형 유지 */
+            background-color: #fff;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem; /* 이모지 크기 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            cursor: default;
+            
+            /* [핵심] 찾지 못한 상태: 흑백 + 흐리게 */
+            filter: grayscale(100%) opacity(0.3);
+        }
+
+        /* 중앙 보물상자 칸 (특별 대우) */
+        #chest-slot {
+            font-size: 3.5rem;
+            filter: none; /* 상자는 항상 선명하게 */
+            opacity: 1;
+        }
+
+        /* [핵심] 찾은 상태 ('found' 클래스 추가 시) */
+        .item-slot.found {
+            filter: grayscale(0%) opacity(1); /* 컬러 복구 */
+            background-color: #e3f2fd; /* 배경색 변경 */
+            border: 2px solid #2196F3;
+            animation: bounce 0.6s; /* 통통 튀는 애니메이션 */
+        }
+        
+        /* 보물상자가 열렸을 때 스타일 */
+        #chest-slot.open {
+            background-color: #fff8e1;
+            border: 2px solid #ffc107;
+            animation: spin 0.6s;
+        }
+
+        /* 승리 메시지 */
+        #win-message {
+            display: none; /* 평소엔 숨김 */
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+            border: 2px solid #FFD700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            animation: slideUp 0.5s ease-out;
+        }
+        #win-message h2 { color: #d32f2f; margin: 0 0 10px; }
+        #win-message p { font-size: 1.1rem; margin: 5px 0; }
+        .password { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            color: #1976D2; 
+            background: #eee; 
+            padding: 5px 15px; 
+            border-radius: 8px; 
+        }
+
+        /* 애니메이션 효과들 */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏫 우리 반 동물농장 보물찾기</h1>
+
+    <div id="instructions">
+        <strong>[참여 방법]</strong><br>
+        1. 교실에 숨겨진 <strong>QR 코드 8개</strong>를 찾으세요.<br>
+        2. QR을 찍으면 동물들이 하나씩 깨어납니다.<br>
+        3. 8마리 동물을 모두 깨우면 <strong>보물상자</strong>가 열립니다!
+    </div>
+
+    <div id="game-board">
+        <div class="item-slot" id="cat">🐱</div>
+        <div class="item-slot" id="dog">🐶</div>
+        <div class="item-slot" id="rabbit">🐰</div>
+        
+        <div class="item-slot" id="bear">🐻</div>
+        <div class="item-slot" id="chest-slot">🎁</div> <div class="item-slot" id="turtle">🐢</div>
+
+        <div class="item-slot" id="fish">🐠</div>
+        <div class="item-slot" id="bird">🐦</div>
+        <div class="item-slot" id="butterfly">🦋</div>
+    </div>
+
+    <div id="win-message">
+        <h2>🎉 축하합니다!</h2>
+        <p>모든 동물 친구들을 찾았습니다.</p>
+        <p>보물상자의 비밀번호는:</p>
+        <div class="password">7 2 1 9</div>
+        <p>선생님께 이 화면을 보여주세요!</p>
+    </div>
+
+    <script>
+        // 1. 찾아야 할 아이템 목록 (ID와 동일하게 설정)
+        const items = ['cat', 'dog', 'rabbit', 'bear', 'turtle', 'fish', 'bird', 'butterfly'];
+        
+        // 2. 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            checkQRCode();    // QR로 들어왔는지 확인
+            updateBoard();    // 화면 업데이트
+        });
+
+        // 3. QR 코드 확인 함수
+        function checkQRCode() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code'); // URL에서 ?code=... 값 가져오기
+
+            if (code && items.includes(code)) {
+                // 저장된 목록 가져오기
+                let foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
+                
+                // 처음 찾은 동물이면 목록에 추가
+                if (!foundList.includes(code)) {
+                    foundList.push(code);
+                    localStorage.setItem('myAnimals', JSON.stringify(foundList));
+                    alert('야호! ' + getEmoji(code) + '를 찾았습니다!');
+                }
+                
+                // 주소창 깨끗하게 정리 (새로고침 시 중복 방지)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // 4. 화면 업데이트 함수
+        function updateBoard() {
+            const foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
+            
+            // 찾은 동물들은 'found' 클래스 추가 (색깔 나타남)
+            foundList.forEach(id => {
+                const element = document.getElementById(id);
+                if(element) element.classList.add('found');
+            });
+
+            // 5. 승리 조건 확인
+            if (foundList.length === items.length) {
+                const chest = document.getElementById('chest-slot');
+                chest.innerHTML = '💎'; // 열린 상자(보석)로 변경
+                chest.classList.add('open');
+                
+                document.getElementById('win-message').style.display = 'block';
+            }
+        }
+
+        // (보조) ID에 맞는 이모지 가져오기 (알림창용)
+        function getEmoji(id) {
+            const emojiMap = {
+                'cat': '🐱', 'dog': '🐶', 'rabbit': '🐰', 'bear': '🐻',
+                'turtle': '🐢', 'fish': '🐠', 'bird': '🐦', 'butterfly': '🦋'
+            };
+            return emojiMap[id] || '동물';
+        }
+
+        // 테스트용 리셋 버튼 (필요시 콘솔에서 resetGame() 실행)
+        function resetGame() {
+            localStorage.removeItem('myAnimals');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
