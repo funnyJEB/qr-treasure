@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR 보물찾기(숨겨진 동물을 찾아라!)</title>
+    <title>QR 보물찾기(숨겨진 동물을 찾아라!)디버그</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body {
@@ -198,13 +198,12 @@
         const items = ['cat', 'dog', 'rabbit', 'bear', 'turtle', 'fish', 'bird', 'butterfly'];
         let isAdminMode = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let html5QrCode; // QR 스캐너 객체
+        let html5QrCode; 
 
         document.addEventListener('DOMContentLoaded', () => {
             const isStarted = localStorage.getItem('gameStarted');
             if (isStarted === 'true') {
                 showGameScreen();
-                // 기존 방식(URL 파라미터)으로 들어온 경우도 처리
                 checkURLQRCode(); 
                 updateBoard();
             }
@@ -226,17 +225,15 @@
             document.getElementById('game-board').style.display = 'grid';
             document.getElementById('admin-controls').style.display = 'block';
             document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('scan-btn').style.display = 'block'; // 스캔 버튼 보이기
+            document.getElementById('scan-btn').style.display = 'block'; 
         }
 
-        // --- [NEW] 인앱 QR 스캐너 로직 ---
         function startScanner() {
             document.getElementById('reader-container').style.display = 'flex';
             
             html5QrCode = new Html5Qrcode("reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
             
-            // 후면 카메라 사용
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
             .catch(err => {
                 alert("카메라를 실행할 수 없습니다. 권한을 허용해주세요.");
@@ -258,53 +255,51 @@
             }
         }
 
-        // [핵심 수정] 오류 없는 단순하고 강력한 스캔 인식 로직
+        // [중요] 디버깅을 위한 스캔 로직 수정
         function onScanSuccess(decodedText, decodedResult) {
             let detectedCode = null;
-        
-            // ▼▼▼ [수정된 방식] ▼▼▼
-            // 복잡한 주소 분석 대신, 우리 동물 목록(items)과 비교만 합니다.
+            
+            // 입력된 텍스트 공백 제거 (오류 방지)
+            let cleanText = decodedText.trim();
+
             for (let item of items) {
-                // 1. QR이 'cat' 처럼 단어만 있는 경우
-                if (decodedText === item) {
+                // 1. QR 내용이 'cat' 단어만 있는 경우
+                if (cleanText === item) {
                     detectedCode = item;
                     break;
                 }
-                // 2. QR이 'https://...?code=cat' 처럼 주소인 경우 ('code=cat' 포함 여부 확인)
-                if (decodedText.includes("code=" + item)) {
+                // 2. QR 내용이 URL이고 'code=cat'을 포함하는 경우
+                if (cleanText.includes("code=" + item)) {
                     detectedCode = item;
                     break;
                 }
             }
-            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         
             if (detectedCode) {
                 // 인식 성공!
-                html5QrCode.pause(); // 스캐너 일시 정지 (중복 인식 방지)
-                
+                html5QrCode.pause(); 
                 processFoundItem(detectedCode);
-        
-                // 1초 뒤 스캐너 닫기
-                setTimeout(() => {
-                    stopScanner();
-                }, 1000);
+                setTimeout(() => { stopScanner(); }, 1000);
             } else {
-                // 인식은 했지만 우리 게임 QR이 아님 (무시)
+                // 인식은 했으나 목록에 없는 경우 -> 디버깅용 알림을 띄웁니다!
+                // *문제가 해결되면 이 alert 줄을 삭제하세요.*
+                alert("인식된 내용: " + cleanText + "\n(동물 목록과 일치하지 않습니다. QR코드를 확인해주세요.)");
+                
+                // 연속 알림 방지를 위해 잠시 멈춤
+                html5QrCode.pause();
+                setTimeout(() => { html5QrCode.resume(); }, 2000);
             }
         }
 
-        // 기존 URL 파라미터 체크 (기본 카메라 앱으로 들어왔을 때용)
         function checkURLQRCode() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             if (code && items.includes(code)) {
                 processFoundItem(code);
-                // 주소창 정리
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
 
-        // 아이템 획득 공통 로직
         function processFoundItem(code) {
             let foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
             
@@ -318,7 +313,6 @@
             }
             updateBoard();
         }
-        // ---------------------------------
 
         function updateBoard() {
             const foundList = JSON.parse(localStorage.getItem('myAnimals')) || [];
@@ -336,7 +330,6 @@
                 chest.innerHTML = '💎';
                 chest.classList.add('open');
                 document.getElementById('win-message').style.display = 'block';
-                // 모두 찾으면 스캔 버튼 숨기기
                 document.getElementById('scan-btn').style.display = 'none';
             } else {
                 const chest = document.getElementById('chest-slot');
