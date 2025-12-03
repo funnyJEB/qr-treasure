@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR 보물찾기 (V7)</title>
+    <title>QR 보물찾기(숨겨진 동물을 찾아라!)</title>
     <style>
         body {
             font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -169,17 +169,18 @@
 </head>
 <body>
 
-    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 전체 데이터 초기화 ⚠️</button>
+    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 처음부터 다시하기 ⚠️</button>
 
-    <h1>🏫 우리 반 동물농장 보물찾기</h1>
+    <h1>🏫 숨겨진 동물을 찾아라!</h1>
 
     <div id="instructions">
         <strong>[참여 방법]</strong><br>
         1. <strong>[▶ 게임 시작]</strong> 버튼을 누르세요.<br>
         2. 곳곳에 숨겨진 <strong>동물 QR 코드</strong>를 찾아 카메라로 비추어보세요.<br>
-        3. 모든 동물 QR코드를 찾으면 보물상자가 열립니다!
+        3. 모든 QR코드를 찾으면 보물상자가 열리고 숨겨진 비밀번호가 보입니다!
+        4. 숨겨진 비밀번호를 가지고 선생님께 오세요~
         
-        <button id="start-btn" onclick="startGame()">▶ 게임 시작 (소리 켜기)</button>
+        <button id="start-btn" onclick="startGame()">▶ 게임 시작</button>
     </div>
 
     <div id="game-board">
@@ -198,9 +199,9 @@
 
     <div id="win-message">
         <h2>🎉 축하합니다!</h2>
-        <p>모든 동물 친구들을 찾았습니다.</p>
+        <p>모든 동물들을 찾았습니다.</p>
         <p>보물상자의 비밀번호는:</p>
-        <div class="password">7 2 1 9</div>
+        <div class="password">은배쌤을 존경하라!</div>
         <p>선생님께 이 화면을 보여주세요!</p>
     </div>
 
