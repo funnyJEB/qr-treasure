@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR 보물찾기 (V8)</title>
+    <title>QR 보물찾기(숨겨진 동물을 찾아라!)</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body {
@@ -145,7 +145,7 @@
 </head>
 <body>
 
-    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 전체 데이터 초기화 ⚠️</button>
+    <button id="reset-all-btn" onclick="resetAllData()">⚠️ 처음부터 다시하기 ⚠️</button>
 
     <div id="reader-container">
         <div style="color:white; margin-bottom:10px; font-size:1.2rem;">QR 코드를 비춰주세요</div>
@@ -153,13 +153,15 @@
         <button id="close-reader-btn" onclick="stopScanner()">닫기</button>
     </div>
 
-    <h1>🏫 우리 반 동물농장 보물찾기</h1>
+    <h1>🏫 숨겨진 동물을 찾아라!</h1>
 
     <div id="instructions">
         <strong>[참여 방법]</strong><br>
         1. <strong>[▶ 게임 시작]</strong> 버튼을 누르세요.<br>
-        2. <strong>[📷 QR 스캔하기]</strong> 버튼을 눌러 카메라를 켜세요.<br>
-        3. 숨겨진 동물 QR을 찍으면 자동으로 등록됩니다!<br>
+        2. 곳곳에 숨겨진 동물 QR을 찾아보세요.
+        3. <strong>[📷 QR 스캔하기]</strong> 버튼을 눌러 카메라를 켜고 QR을 확인하세요.<br>
+        4. 모든 QR코드를 찾으면 보물상자가 열리고 숨겨진 비밀번호가 보입니다.<br>
+        5. 숨겨진 비밀번호를 가지고 선생님께 오세요요.<br>
         
         <button id="start-btn" class="action-btn" onclick="startGame()">▶ 게임 시작 (소리 켜기)</button>
         <button id="scan-btn" class="action-btn" onclick="startScanner()">📷 QR 스캔하기</button>
@@ -181,9 +183,9 @@
 
     <div id="win-message">
         <h2>🎉 축하합니다!</h2>
-        <p>모든 동물 친구들을 찾았습니다.</p>
+        <p>모든 동물들을 찾았습니다.</p>
         <p>보물상자의 비밀번호는:</p>
-        <div class="password">7 2 1 9</div>
+        <div class="password">은배쌤을 존경하라!!</div>
         <p>선생님께 이 화면을 보여주세요!</p>
     </div>
 
