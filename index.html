@@ -258,32 +258,38 @@
             }
         }
 
-        // QR 인식 성공 시 실행
+        // [핵심 수정] 오류 없는 단순하고 강력한 스캔 인식 로직
         function onScanSuccess(decodedText, decodedResult) {
-            // 스캔된 주소에서 ?code=... 부분 찾기
-            // 예: https://.../?code=cat 또는 그냥 cat
-            let code = null;
-
-            if (decodedText.includes('code=')) {
-                const url = new URL(decodedText);
-                code = url.searchParams.get('code');
-            } else {
-                // 혹시 코드만 QR로 만든 경우 (예: 그냥 'cat' 글자)
-                if (items.includes(decodedText)) {
-                    code = decodedText;
+            let detectedCode = null;
+        
+            // ▼▼▼ [수정된 방식] ▼▼▼
+            // 복잡한 주소 분석 대신, 우리 동물 목록(items)과 비교만 합니다.
+            for (let item of items) {
+                // 1. QR이 'cat' 처럼 단어만 있는 경우
+                if (decodedText === item) {
+                    detectedCode = item;
+                    break;
+                }
+                // 2. QR이 'https://...?code=cat' 처럼 주소인 경우 ('code=cat' 포함 여부 확인)
+                if (decodedText.includes("code=" + item)) {
+                    detectedCode = item;
+                    break;
                 }
             }
-
-            if (code && items.includes(code)) {
-                // 스캐너 잠시 멈춤 (연속 인식 방지)
-                html5QrCode.pause(); 
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        
+            if (detectedCode) {
+                // 인식 성공!
+                html5QrCode.pause(); // 스캐너 일시 정지 (중복 인식 방지)
                 
-                processFoundItem(code); // 아이템 획득 처리
-
-                // 1.5초 후 스캐너 닫기 (또는 다시 재개 가능)
+                processFoundItem(detectedCode);
+        
+                // 1초 뒤 스캐너 닫기
                 setTimeout(() => {
                     stopScanner();
                 }, 1000);
+            } else {
+                // 인식은 했지만 우리 게임 QR이 아님 (무시)
             }
         }
 
